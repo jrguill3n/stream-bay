@@ -7,7 +7,6 @@ import { ChatInterface } from "@/components/chat-interface"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useZendesk } from "@/hooks/use-zendesk"
 
 const LISTING = {
   id: "1234",
@@ -29,7 +28,6 @@ export default function BuyerView() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
-  const { isReady: isZendeskReady, openZendesk } = useZendesk()
 
   useEffect(() => {
     let mounted = true
@@ -104,30 +102,13 @@ export default function BuyerView() {
 
   const handleEscalate = async () => {
     console.log("[v0] ===== ESCALATE BUTTON CLICKED =====")
-    console.log("[v0] isZendeskReady:", isZendeskReady)
-    console.log("[v0] window.zE exists:", !!window.zE)
 
-    try {
-      console.log("[v0] Calling openZendesk()")
-      openZendesk()
+    setIsEscalated(true)
 
-      console.log("[v0] Setting escalated state to true")
-      setIsEscalated(true)
-
-      toast({
-        title: "Connected to Support",
-        description: "The support chat widget should open on the bottom right",
-      })
-
-      console.log("[v0] ===== ESCALATION COMPLETE =====")
-    } catch (error) {
-      console.error("[v0] Error in handleEscalate:", error)
-      toast({
-        title: "Could not open support chat",
-        description: "Please try again or check the console for errors",
-        variant: "destructive",
-      })
-    }
+    toast({
+      title: "Connected to Support",
+      description: "Support chat has been loaded",
+    })
   }
 
   if (error) {
@@ -193,29 +174,31 @@ export default function BuyerView() {
               {isEscalated && (
                 <Card className="border-primary bg-primary/5">
                   <CardContent className="py-3 px-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-primary">Now chatting with Support via Zendesk</p>
-                        <p className="text-sm text-muted-foreground">Check the messenger widget for responses</p>
-                      </div>
-                      <Button size="sm" onClick={openZendesk} variant="outline">
-                        Open Support Chat
-                      </Button>
-                    </div>
+                    <p className="font-semibold text-primary">Now chatting with Support via Zendesk</p>
+                    <p className="text-sm text-muted-foreground">Use the support chat below</p>
                   </CardContent>
                 </Card>
               )}
 
-              <div className={isEscalated ? "opacity-50 pointer-events-none" : ""}>
+              {isEscalated ? (
+                <Card className="shadow-md border overflow-hidden">
+                  <iframe
+                    src="https://stream-bay.zendesk.com/agent/tickets/6"
+                    className="w-full h-[600px] border-0"
+                    title="Zendesk Support Ticket"
+                    allow="clipboard-read; clipboard-write"
+                  />
+                </Card>
+              ) : (
                 <ChatInterface
                   userId={BUYER_ID}
                   userName="Buyer User"
                   channelId={channelId}
-                  title={isEscalated ? "Original Chat (Support via Zendesk)" : "Chat with Seller"}
+                  title="Chat with Seller"
                   onEscalate={handleEscalate}
-                  showEscalateButton={!isEscalated}
+                  showEscalateButton={true}
                 />
-              </div>
+              )}
             </div>
           ) : (
             <Card className="h-full flex items-center justify-center shadow-md border">
