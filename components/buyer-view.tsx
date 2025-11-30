@@ -27,6 +27,8 @@ export default function BuyerView() {
   const [isEscalated, setIsEscalated] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [zendeskTicketId, setZendeskTicketId] = useState<string | null>(null)
+  const [zendeskTicketUrl, setZendeskTicketUrl] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -103,6 +105,15 @@ export default function BuyerView() {
   const handleEscalate = async () => {
     if (!channelId) return
 
+    if (zendeskTicketId && zendeskTicketUrl) {
+      window.open(zendeskTicketUrl, "_blank")
+      toast({
+        title: "Opening Zendesk Ticket",
+        description: `Opening ticket #${zendeskTicketId} in a new tab.`,
+      })
+      return
+    }
+
     try {
       setIsLoading(true)
 
@@ -141,12 +152,15 @@ export default function BuyerView() {
       const zendeskData = await zendeskResponse.json()
 
       if (zendeskResponse.ok) {
-        const { ticketId } = zendeskData
+        const { ticketId, ticketUrl } = zendeskData
         console.log("[v0] Zendesk ticket created:", ticketId)
+
+        setZendeskTicketId(ticketId)
+        setZendeskTicketUrl(ticketUrl)
 
         toast({
           title: "Support ticket created",
-          description: `Ticket #${ticketId} has been created in Zendesk.`,
+          description: `Ticket #${ticketId} has been created in Zendesk. Click "Need Help?" again to open it.`,
         })
       } else {
         console.error("[v0] Failed to create Zendesk ticket:", zendeskData)
@@ -234,7 +248,8 @@ export default function BuyerView() {
               channelId={channelId}
               title={isEscalated ? "Support Chat" : "Chat with Seller"}
               onEscalate={handleEscalate}
-              showEscalateButton={!isEscalated}
+              showEscalateButton={!isEscalated || !!zendeskTicketId}
+              escalateButtonText={zendeskTicketId ? "Open Zendesk Ticket" : undefined}
             />
           ) : (
             <Card className="h-full flex items-center justify-center shadow-md border">
