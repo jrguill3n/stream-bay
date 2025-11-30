@@ -25,34 +25,28 @@ interface ZendeskChatInterfaceProps {
 export function ZendeskChatInterface({ ticketId, customerId, customerName }: ZendeskChatInterfaceProps) {
   const [messages, setMessages] = useState<ZendeskMessage[]>([])
   const [newMessage, setNewMessage] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [initialLoad, setInitialLoad] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Fetch ticket comments/messages
-  useEffect(() => {
-    async function fetchMessages() {
-      setIsLoading(true)
-      try {
-        const response = await fetch(`/api/zendesk/messages?ticketId=${ticketId}`)
-        if (!response.ok) throw new Error("Failed to fetch messages")
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch(`/api/zendesk/messages?ticketId=${ticketId}`)
+      if (!response.ok) throw new Error("Failed to fetch messages")
 
-        const data = await response.json()
-        setMessages(data.comments || [])
-      } catch (error) {
-        console.error("[v0] Failed to fetch Zendesk messages:", error)
-      } finally {
-        setIsLoading(false)
-      }
+      const data = await response.json()
+      setMessages(data.comments || [])
+      setInitialLoad(false)
+    } catch (error) {
+      console.error("[v0] Failed to fetch Zendesk messages:", error)
+      setInitialLoad(false)
     }
+  }
 
+  useEffect(() => {
     fetchMessages()
-    // Poll for new messages every 5 seconds
-    const interval = setInterval(fetchMessages, 5000)
-    return () => clearInterval(interval)
   }, [ticketId])
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" })
@@ -75,14 +69,16 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to send message")
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to send message")
+      }
 
-      const data = await response.json()
-      // Add the new message to the list immediately
-      setMessages((prev) => [...prev, data.comment])
       setNewMessage("")
+      await fetchMessages()
     } catch (error) {
       console.error("[v0] Failed to send message:", error)
+      alert("Failed to send message. Please try again.")
     } finally {
       setIsSending(false)
     }
@@ -95,7 +91,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
     }
   }
 
-  if (isLoading) {
+  if (initialLoad) {
     return (
       <div className="h-[600px] flex items-center justify-center">
         <p className="text-muted-foreground">Loading support chat...</p>

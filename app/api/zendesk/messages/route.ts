@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
   try {
     const { ticketId, message, customerId, customerName } = await req.json()
 
+    console.log("[v0] Sending message to Zendesk:", { ticketId, message, customerId, customerName })
+
     if (!ticketId || !message) {
       return NextResponse.json({ error: "Missing ticketId or message" }, { status: 400 })
     }
@@ -57,6 +59,8 @@ export async function POST(req: NextRequest) {
     const url = `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets/${ticketId}.json`
     const authHeader = `Basic ${Buffer.from(`${ZENDESK_EMAIL}/token:${ZENDESK_API_TOKEN}`).toString("base64")}`
 
+    console.log("[v0] Calling Zendesk API:", url)
+
     const response = await fetch(url, {
       method: "PUT",
       headers: {
@@ -68,18 +72,21 @@ export async function POST(req: NextRequest) {
           comment: {
             body: message,
             public: true,
-            author_id: customerId,
           },
         },
       }),
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[v0] Zendesk API error:", response.status, errorText)
       throw new Error(`Zendesk API error: ${response.status}`)
     }
 
     const data = await response.json()
-    return NextResponse.json({ success: true, comment: data.ticket.comment })
+    console.log("[v0] Message sent successfully:", data)
+
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Failed to send message to Zendesk:", error)
     return NextResponse.json({ error: "Failed to send message" }, { status: 500 })
