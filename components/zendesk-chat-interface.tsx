@@ -125,7 +125,12 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => {
-            const isCustomer = customerMessageIds.has(message.id) || message.author_id === requesterId
+            const hasCustomerPrefix = message.body.startsWith(`[${customerName}]:`)
+            const isCustomer =
+              hasCustomerPrefix || customerMessageIds.has(message.id) || message.author_id === requesterId
+
+            const displayBody = hasCustomerPrefix ? message.body.replace(`[${customerName}]: `, "") : message.body
+
             return (
               <div key={message.id} className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}>
                 <div
@@ -134,7 +139,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
                   }`}
                 >
                   <div className="text-xs opacity-70 mb-1">{isCustomer ? customerName : "Support Agent"}</div>
-                  <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+                  <p className="text-sm whitespace-pre-wrap">{displayBody}</p>
                   <div className="text-xs opacity-60 mt-1">{new Date(message.created_at).toLocaleTimeString()}</div>
                 </div>
               </div>
