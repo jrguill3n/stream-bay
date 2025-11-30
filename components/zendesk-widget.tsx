@@ -18,16 +18,21 @@ export function ZendeskWidget() {
     script.onload = () => {
       console.log("[v0] Zendesk widget loaded")
 
-      // Hide widget by default - we'll open it programmatically
-      if (window.zE) {
-        window.zE("messenger", "hide")
-      }
+      setTimeout(() => {
+        if (window.zE) {
+          window.zE("messenger", "hide")
+          console.log("[v0] Zendesk widget hidden by default")
+        }
+      }, 1000)
+    }
+
+    script.onerror = () => {
+      console.error("[v0] Failed to load Zendesk widget")
     }
 
     document.body.appendChild(script)
 
     return () => {
-      // Cleanup on unmount
       const existingScript = document.getElementById("ze-snippet")
       if (existingScript) {
         document.body.removeChild(existingScript)
