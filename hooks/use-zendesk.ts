@@ -31,18 +31,24 @@ export function useZendesk() {
   }, [])
 
   const openZendesk = () => {
-    console.log("[v0] Attempting to open Zendesk, window.zE exists:", !!window.zE)
+    console.log("[v0] ===== OPEN ZENDESK CALLED =====")
+    console.log("[v0] window.zE type:", typeof window.zE)
+    console.log("[v0] window.zE value:", window.zE)
 
     if (window.zE) {
       try {
+        console.log("[v0] Calling zE('messenger', 'show')")
         window.zE("messenger", "show")
+
+        console.log("[v0] Calling zE('messenger', 'open')")
         window.zE("messenger", "open")
-        console.log("[v0] Zendesk messenger opened")
+
+        console.log("[v0] Zendesk messenger commands executed successfully")
       } catch (error) {
-        console.error("[v0] Error opening Zendesk:", error)
+        console.error("[v0] Error executing Zendesk commands:", error)
       }
     } else {
-      console.warn("[v0] Zendesk widget not available")
+      console.error("[v0] window.zE is not available!")
     }
   }
 

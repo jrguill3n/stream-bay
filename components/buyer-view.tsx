@@ -103,19 +103,25 @@ export default function BuyerView() {
   }
 
   const handleEscalate = async () => {
-    try {
-      console.log("[v0] Escalating to Zendesk support")
-      console.log("[v0] Zendesk ready:", isZendeskReady)
+    console.log("[v0] ===== ESCALATE BUTTON CLICKED =====")
+    console.log("[v0] isZendeskReady:", isZendeskReady)
+    console.log("[v0] window.zE exists:", !!window.zE)
 
+    try {
+      console.log("[v0] Calling openZendesk()")
       openZendesk()
+
+      console.log("[v0] Setting escalated state to true")
       setIsEscalated(true)
 
       toast({
         title: "Connected to Support",
         description: "The support chat widget should open on the bottom right",
       })
+
+      console.log("[v0] ===== ESCALATION COMPLETE =====")
     } catch (error) {
-      console.error("[v0] Error opening Zendesk:", error)
+      console.error("[v0] Error in handleEscalate:", error)
       toast({
         title: "Could not open support chat",
         description: "Please try again or check the console for errors",

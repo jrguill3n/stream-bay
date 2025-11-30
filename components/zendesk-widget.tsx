@@ -16,12 +16,17 @@ export function ZendeskWidget() {
     script.async = true
 
     script.onload = () => {
-      console.log("[v0] Zendesk widget loaded")
+      console.log("[v0] ===== ZENDESK SCRIPT LOADED =====")
+      console.log("[v0] window.zE type:", typeof window.zE)
+      console.log("[v0] window.zE available:", !!window.zE)
 
       setTimeout(() => {
         if (window.zE) {
+          console.log("[v0] Hiding Zendesk widget by default")
           window.zE("messenger", "hide")
-          console.log("[v0] Zendesk widget hidden by default")
+          console.log("[v0] Zendesk widget hidden successfully")
+        } else {
+          console.warn("[v0] window.zE not available after script load")
         }
       }, 1000)
     }
