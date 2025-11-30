@@ -7,6 +7,7 @@ import { ChatInterface } from "@/components/chat-interface"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { ZendeskChatInterface } from "@/components/zendesk-chat-interface"
 
 const LISTING = {
   id: "1234",
@@ -107,7 +108,7 @@ export default function BuyerView() {
 
     toast({
       title: "Connected to Support",
-      description: "Support chat has been loaded",
+      description: "Loading support chat...",
     })
   }
 
@@ -175,20 +176,13 @@ export default function BuyerView() {
                 <Card className="border-primary bg-primary/5">
                   <CardContent className="py-3 px-4">
                     <p className="font-semibold text-primary">Now chatting with Support via Zendesk</p>
-                    <p className="text-sm text-muted-foreground">Use the support chat below</p>
+                    <p className="text-sm text-muted-foreground">Your messages are sent directly to our support team</p>
                   </CardContent>
                 </Card>
               )}
 
               {isEscalated ? (
-                <Card className="shadow-md border overflow-hidden">
-                  <iframe
-                    src="https://stream-bay.zendesk.com/agent/tickets/6"
-                    className="w-full h-[600px] border-0"
-                    title="Zendesk Support Ticket"
-                    allow="clipboard-read; clipboard-write"
-                  />
-                </Card>
+                <ZendeskChatInterface ticketId="6" customerId={BUYER_ID} customerName="Buyer User" />
               ) : (
                 <ChatInterface
                   userId={BUYER_ID}
