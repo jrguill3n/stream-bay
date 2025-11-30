@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChatInterface } from "@/components/chat-interface"
 import { Headphones, AlertCircle, Clock, User } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { StreamChat } from "stream-chat"
 
 const SUPPORT_AGENT_ID = "support_1"
 
@@ -25,66 +24,8 @@ export default function SupportView() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchSupportChannels = async () => {
-      try {
-        // Get token for support agent
-        const tokenResponse = await fetch("/api/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: SUPPORT_AGENT_ID, name: "Support Agent" }),
-        })
-
-        if (!tokenResponse.ok) {
-          throw new Error("Failed to get token")
-        }
-
-        const { token, apiKey } = await tokenResponse.json()
-
-        if (!apiKey || !token) {
-          throw new Error("Invalid token response")
-        }
-
-        // Create client and connect
-        const client = new StreamChat(apiKey)
-        await client.connectUser({ id: SUPPORT_AGENT_ID, name: "Support Agent" }, token)
-
-        // Query all support channels (channels with ID starting with "support-")
-        const filter = {
-          type: "messaging",
-          members: { $in: [SUPPORT_AGENT_ID] },
-        }
-
-        const sort = [{ last_message_at: -1 as const }]
-        const channels = await client.queryChannels(filter, sort, { limit: 20 })
-
-        // Filter only support channels and extract info
-        const supportChans = channels
-          .filter((ch) => ch.id?.startsWith("support-"))
-          .map((ch) => {
-            const originalChannelId = ch.id?.replace("support-", "") || ""
-            const customerMember = Object.values(ch.state.members).find((m) => m.user_id !== SUPPORT_AGENT_ID)
-            const customerId = customerMember?.user_id || "unknown"
-
-            return {
-              id: ch.id || "",
-              customerId,
-              originalChannelId,
-              createdAt: ch.data?.created_at ? new Date(ch.data.created_at) : new Date(),
-              hasUnread: (ch.countUnread() || 0) > 0,
-            }
-          })
-
-        setSupportChannels(supportChans)
-        await client.disconnectUser()
-        setIsLoading(false)
-      } catch (err) {
-        console.error("[v0] Error fetching support channels:", err)
-        setError(err instanceof Error ? err.message : "Failed to load support channels")
-        setIsLoading(false)
-      }
-    }
-
-    fetchSupportChannels()
+    setIsLoading(false)
+    setSupportChannels([])
   }, [])
 
   const handleSelectChannel = (channelId: string) => {

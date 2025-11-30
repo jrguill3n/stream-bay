@@ -25,8 +25,6 @@ const SELLER_ID = "seller_1"
 export default function BuyerView() {
   const [channelId, setChannelId] = useState<string | null>(null)
   const [isEscalated, setIsEscalated] = useState(false)
-  const [zendeskTicketId, setZendeskTicketId] = useState<string | null>(null)
-  const [zendeskTicketUrl, setZendeskTicketUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
@@ -108,16 +106,6 @@ export default function BuyerView() {
     try {
       setIsLoading(true)
 
-      if (zendeskTicketId && zendeskTicketUrl) {
-        console.log("[v0] Opening existing Zendesk ticket:", zendeskTicketId)
-        window.open(zendeskTicketUrl, "_blank")
-        toast({
-          title: "Ticket opened",
-          description: `Opening existing ticket #${zendeskTicketId} in Zendesk`,
-        })
-        return
-      }
-
       console.log("[v0] Escalating from channel:", channelId)
 
       const response = await fetch("/api/channels/escalate", {
@@ -153,15 +141,12 @@ export default function BuyerView() {
       const zendeskData = await zendeskResponse.json()
 
       if (zendeskResponse.ok) {
-        const { ticketId, ticketUrl } = zendeskData
+        const { ticketId } = zendeskData
         console.log("[v0] Zendesk ticket created:", ticketId)
-
-        setZendeskTicketId(ticketId)
-        setZendeskTicketUrl(ticketUrl)
 
         toast({
           title: "Support ticket created",
-          description: `Ticket #${ticketId} created. Click "Need Help?" again to open it.`,
+          description: `Ticket #${ticketId} has been created in Zendesk.`,
         })
       } else {
         console.error("[v0] Failed to create Zendesk ticket:", zendeskData)
@@ -249,8 +234,7 @@ export default function BuyerView() {
               channelId={channelId}
               title={isEscalated ? "Support Chat" : "Chat with Seller"}
               onEscalate={handleEscalate}
-              showEscalateButton={!isEscalated || !!zendeskTicketId}
-              escalateButtonText={zendeskTicketId ? "Open Zendesk Ticket" : "Need Help?"}
+              showEscalateButton={!isEscalated}
             />
           ) : (
             <Card className="h-full flex items-center justify-center shadow-md border">
