@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Zendesk credentials not configured" }, { status: 500 })
     }
 
-    // Add comment to Zendesk ticket
     const url = `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets/${ticketId}.json`
     const authHeader = `Basic ${Buffer.from(`${ZENDESK_EMAIL}/token:${ZENDESK_API_TOKEN}`).toString("base64")}`
 
@@ -87,9 +86,8 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         ticket: {
           comment: {
-            body: message,
+            body: `[${customerName}]: ${message}`,
             public: true,
-            author_id: customerId,
           },
         },
       }),
