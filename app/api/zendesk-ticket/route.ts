@@ -41,6 +41,10 @@ export async function POST(req: Request) {
     // Step 5: Construct the Zendesk API endpoint
     const zendeskUrl = `https://${subdomain}.zendesk.com/api/v2/tickets.json`
 
+    console.log("[v0] Zendesk API URL:", zendeskUrl)
+    console.log("[v0] Zendesk email:", email)
+    console.log("[v0] Subdomain:", subdomain)
+
     // Step 6: Prepare Basic Authentication header
     // Format: "email/token:api_token" encoded in base64
     const authString = `${email}/token:${apiToken}`
@@ -77,12 +81,19 @@ export async function POST(req: Request) {
     // Step 9: Handle non-successful responses from Zendesk
     if (!zendeskResponse.ok) {
       const errorText = await zendeskResponse.text()
-      console.error("[v0] Zendesk API error:", errorText)
+      console.error("[v0] Zendesk API error:", {
+        status: zendeskResponse.status,
+        statusText: zendeskResponse.statusText,
+        url: zendeskUrl,
+        subdomain: subdomain,
+        response: errorText,
+      })
       return NextResponse.json(
         {
           ok: false,
           error: `Zendesk API error: ${zendeskResponse.status} ${zendeskResponse.statusText}`,
           details: errorText,
+          attemptedUrl: zendeskUrl,
         },
         { status: 500 },
       )
