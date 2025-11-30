@@ -28,7 +28,6 @@ export default function BuyerView() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [zendeskTicketId, setZendeskTicketId] = useState<string | null>(null)
-  const [zendeskTicketUrl, setZendeskTicketUrl] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -103,14 +102,43 @@ export default function BuyerView() {
   }
 
   const handleEscalate = async () => {
-    const ticketUrl = "https://stream-bay.zendesk.com/agent/tickets/6"
+    try {
+      console.log("[v0] Starting Zendesk escalation")
 
-    window.open(ticketUrl, "_blank", "width=1200,height=800")
+      const response = await fetch("/api/zendesk-escalate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId: LISTING.id,
+          buyerId: BUYER_ID,
+          sellerId: SELLER_ID,
+        }),
+      })
 
-    toast({
-      title: "Opening Support Ticket",
-      description: "Your support ticket is opening in a new window.",
-    })
+      if (!response.ok) {
+        throw new Error("Failed to escalate to Zendesk")
+      }
+
+      const data = await response.json()
+      console.log("[v0] Zendesk escalation response:", data)
+
+      setZendeskTicketId(data.ticketId)
+      setIsEscalated(true)
+
+      toast({
+        title: data.isNew ? "Support Ticket Created" : "Opening Existing Ticket",
+        description: `Ticket #${data.ticketId} - ${data.message}`,
+      })
+
+      window.open(data.ticketUrl, "_blank", "width=1200,height=800")
+    } catch (error) {
+      console.error("[v0] Error escalating to Zendesk:", error)
+      toast({
+        title: "Escalation Failed",
+        description: "Could not create support ticket. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   if (error) {
@@ -172,14 +200,32 @@ export default function BuyerView() {
 
         <div className="flex-1 min-h-[600px]">
           {channelId ? (
-            <ChatInterface
-              userId={BUYER_ID}
-              userName="Buyer User"
-              channelId={channelId}
-              title={isEscalated ? "Support Chat" : "Chat with Seller"}
-              onEscalate={handleEscalate}
-              showEscalateButton={!isEscalated}
-            />
+            <div className="space-y-3">
+              {isEscalated && zendeskTicketId && (
+                <Card className="border-primary bg-primary/5">
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-primary">Now chatting with Support via Zendesk</p>
+                        <p className="text-sm text-muted-foreground">Ticket #{zendeskTicketId}</p>
+                      </div>
+                      <Badge variant="secondary">Support Active</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className={isEscalated ? "opacity-50 pointer-events-none" : ""}>
+                <ChatInterface
+                  userId={BUYER_ID}
+                  userName="Buyer User"
+                  channelId={channelId}
+                  title={isEscalated ? "Original Chat (Support via Zendesk)" : "Chat with Seller"}
+                  onEscalate={handleEscalate}
+                  showEscalateButton={!isEscalated}
+                />
+              </div>
+            </div>
           ) : (
             <Card className="h-full flex items-center justify-center shadow-md border">
               <CardContent className="text-center">
