@@ -129,6 +129,9 @@ export default function BuyerView() {
       setChannelId(supportChannelId)
       setIsEscalated(true)
 
+      console.log("[v0] Attempting to create Zendesk ticket...")
+      alert("Escalation successful! Now creating Zendesk ticket...")
+
       try {
         const zendeskResponse = await fetch("/api/zendesk-ticket", {
           method: "POST",
@@ -140,24 +143,36 @@ export default function BuyerView() {
           }),
         })
 
+        console.log("[v0] Zendesk API response status:", zendeskResponse.status)
+        const zendeskData = await zendeskResponse.json()
+        console.log("[v0] Zendesk API response data:", zendeskData)
+
         if (zendeskResponse.ok) {
-          const { ticketId, ticketUrl } = await zendeskResponse.json()
-          console.log("[v0] Zendesk ticket created:", ticketId)
+          const { ticketId, ticketUrl } = zendeskData
+          console.log("[v0] Zendesk ticket created:", ticketId, ticketUrl)
+
+          alert(`✅ Zendesk Ticket Created!\nTicket #${ticketId}\n${ticketUrl}`)
 
           toast({
             title: "Support ticket created",
             description: `A support ticket has been created. Ticket #${ticketId}`,
           })
         } else {
-          const errorData = await zendeskResponse.json().catch(() => ({ error: "Unknown error" }))
-          console.error("[v0] Failed to create Zendesk ticket:", errorData)
+          console.error("[v0] Failed to create Zendesk ticket:", zendeskData)
+          alert(
+            `❌ Failed to create Zendesk ticket:\n${zendeskData.error || "Unknown error"}\n\nCheck console for details.`,
+          )
         }
       } catch (zendeskError) {
         console.error("[v0] Zendesk ticket creation error:", zendeskError)
+        alert(
+          `❌ Zendesk API Error:\n${zendeskError instanceof Error ? zendeskError.message : "Unknown error"}\n\nCheck console for details.`,
+        )
       }
     } catch (err) {
       console.error("[v0] Failed to escalate:", err)
       setError("Failed to escalate to support. Please try again.")
+      alert(`❌ Escalation failed:\n${err instanceof Error ? err.message : "Unknown error"}`)
     } finally {
       setIsLoading(false)
     }
