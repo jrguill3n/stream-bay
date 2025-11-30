@@ -22,10 +22,10 @@ export default function Home() {
       <header className="bg-white border-b border-border shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <button onClick={handleReset} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <ShoppingBag className="h-8 w-8 text-primary" />
               <h1 className="text-3xl font-bold text-foreground">StreamBay</h1>
-            </div>
+            </button>
             {selectedRole && (
               <Button variant="outline" onClick={handleReset} size="sm">
                 Change Role
@@ -44,10 +44,7 @@ export default function Home() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card
-                className="cursor-pointer hover:shadow-lg transition-shadow border-2"
-                onClick={() => setSelectedRole("buyer")}
-              >
+              <Card className="hover:shadow-lg transition-shadow border-2">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <ShoppingBag className="h-8 w-8 text-primary" />
@@ -58,16 +55,13 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={() => setSelectedRole("buyer")}>
                     Continue as Buyer
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card
-                className="cursor-pointer hover:shadow-lg transition-shadow border-2"
-                onClick={() => setSelectedRole("seller")}
-              >
+              <Card className="hover:shadow-lg transition-shadow border-2">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Store className="h-8 w-8 text-primary" />
@@ -76,25 +70,25 @@ export default function Home() {
                   <CardDescription>Manage your listings and respond to buyer inquiries in real-time.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={() => setSelectedRole("seller")}>
                     Continue as Seller
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card
-                className="cursor-pointer hover:shadow-lg transition-shadow border-2"
-                onClick={() => setSelectedRole("support")}
-              >
+              <Card className="hover:shadow-lg transition-shadow border-2">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Headphones className="h-8 w-8 text-primary" />
                   </div>
                   <CardTitle className="text-xl">Support Agent</CardTitle>
                   <CardDescription>Handle escalated conversations and help resolve customer issues.</CardDescription>
+                  <p className="text-xs text-muted-foreground mt-2 italic">
+                    Escalated conversations are managed via Zendesk
+                  </p>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={() => setSelectedRole("support")}>
                     Continue as Support
                   </Button>
                 </CardContent>
