@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChatInterface } from "@/components/chat-interface"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, ShoppingCart } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 const LISTING = {
   id: "1234",
@@ -26,6 +27,7 @@ export default function BuyerView() {
   const [isEscalated, setIsEscalated] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     let mounted = true
@@ -126,6 +128,33 @@ export default function BuyerView() {
       console.log("[v0] Escalated to support channel:", supportChannelId)
       setChannelId(supportChannelId)
       setIsEscalated(true)
+
+      try {
+        const zendeskResponse = await fetch("/api/zendesk-ticket", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channelId: supportChannelId,
+            customerId: BUYER_ID,
+            listingId: LISTING.id,
+          }),
+        })
+
+        if (zendeskResponse.ok) {
+          const { ticketId, ticketUrl } = await zendeskResponse.json()
+          console.log("[v0] Zendesk ticket created:", ticketId)
+
+          toast({
+            title: "Support ticket created",
+            description: `A support ticket has been created. Ticket #${ticketId}`,
+          })
+        } else {
+          const errorData = await zendeskResponse.json().catch(() => ({ error: "Unknown error" }))
+          console.error("[v0] Failed to create Zendesk ticket:", errorData)
+        }
+      } catch (zendeskError) {
+        console.error("[v0] Zendesk ticket creation error:", zendeskError)
+      }
     } catch (err) {
       console.error("[v0] Failed to escalate:", err)
       setError("Failed to escalate to support. Please try again.")
@@ -150,7 +179,6 @@ export default function BuyerView() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Product listing - left side */}
         <div className="lg:w-[380px] flex-shrink-0">
           <Card className="shadow-md border">
             <CardContent className="p-0">
@@ -192,7 +220,6 @@ export default function BuyerView() {
           </Card>
         </div>
 
-        {/* Chat interface - right side */}
         <div className="flex-1 min-h-[600px]">
           {channelId ? (
             <ChatInterface
