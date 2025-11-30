@@ -102,13 +102,19 @@ export default function BuyerView() {
   }
 
   const handleEscalate = async () => {
-    console.log("[v0] ===== ESCALATE BUTTON CLICKED =====")
-
     setIsEscalated(true)
 
     toast({
       title: "Connected to Support",
       description: "Loading support chat...",
+    })
+  }
+
+  const handleBackToSeller = () => {
+    setIsEscalated(false)
+    toast({
+      title: "Returned to Seller Chat",
+      description: "You can now continue chatting with the seller",
     })
   }
 
@@ -182,7 +188,12 @@ export default function BuyerView() {
               )}
 
               {isEscalated ? (
-                <ZendeskChatInterface ticketId="6" customerId={BUYER_ID} customerName="Buyer User" />
+                <ZendeskChatInterface
+                  ticketId="6"
+                  customerId={BUYER_ID}
+                  customerName="Buyer User"
+                  onBack={handleBackToSeller}
+                />
               ) : (
                 <ChatInterface
                   userId={BUYER_ID}

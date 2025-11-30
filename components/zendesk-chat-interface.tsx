@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send } from "lucide-react"
+import { Send, ArrowLeft } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface ZendeskMessage {
@@ -20,14 +20,14 @@ interface ZendeskChatInterfaceProps {
   ticketId: string
   customerId: string
   customerName: string
+  onBack?: () => void
 }
 
-export function ZendeskChatInterface({ ticketId, customerId, customerName }: ZendeskChatInterfaceProps) {
+export function ZendeskChatInterface({ ticketId, customerId, customerName, onBack }: ZendeskChatInterfaceProps) {
   const [messages, setMessages] = useState<ZendeskMessage[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
-  const [requesterId, setRequesterId] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [customerMessageIds, setCustomerMessageIds] = useState<Set<number>>(new Set())
 
@@ -38,10 +38,9 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
 
       const data = await response.json()
       setMessages(data.comments || [])
-      setRequesterId(data.requesterId)
       setInitialLoad(false)
     } catch (error) {
-      console.error("[v0] Failed to fetch Zendesk messages:", error)
+      console.error("Failed to fetch Zendesk messages:", error)
       setInitialLoad(false)
     }
   }
@@ -91,7 +90,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
       setNewMessage("")
       await fetchMessages()
     } catch (error) {
-      console.error("[v0] Failed to send message:", error)
+      console.error("Failed to send message:", error)
       alert("Failed to send message. Please try again.")
     } finally {
       setIsSending(false)
@@ -116,8 +115,18 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
   return (
     <div className="flex flex-col h-[600px] bg-background border rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b bg-primary/5 shrink-0">
-        <h3 className="font-semibold text-primary">Support Chat (Zendesk Ticket #{ticketId})</h3>
-        <p className="text-xs text-muted-foreground">Connected to support team</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-primary">Support Chat (Zendesk Ticket #{ticketId})</h3>
+            <p className="text-xs text-muted-foreground">Connected to support team</p>
+          </div>
+          {onBack && (
+            <Button variant="outline" size="sm" onClick={onBack} className="shrink-0 bg-transparent">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Seller
+            </Button>
+          )}
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-4 overflow-auto">

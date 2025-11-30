@@ -6,8 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Headphones, AlertCircle, Clock, ExternalLink, Ticket } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
-const SUPPORT_AGENT_ID = "support_1"
-
 interface ZendeskTicket {
   id: number
   subject: string
@@ -39,7 +37,7 @@ export default function SupportView() {
       const data = await response.json()
       setTickets(data.tickets)
     } catch (err) {
-      console.error("[v0] Error fetching tickets:", err)
+      console.error("Error fetching tickets:", err)
       setError(err instanceof Error ? err.message : "Failed to load tickets")
     } finally {
       setIsLoading(false)
@@ -81,7 +79,8 @@ export default function SupportView() {
             <div className="flex-1">
               <CardTitle className="text-2xl">Support Agent Dashboard</CardTitle>
               <CardDescription className="text-base mt-1">
-                {tickets.length} open {tickets.length === 1 ? "ticket" : "tickets"} from Zendesk
+                All conversations are handled via Zendesk. {tickets.length} open{" "}
+                {tickets.length === 1 ? "ticket" : "tickets"} awaiting response.
               </CardDescription>
             </div>
             <Button variant="outline" onClick={fetchTickets} className="font-semibold bg-transparent">
@@ -95,16 +94,16 @@ export default function SupportView() {
         <CardHeader className="border-b">
           <CardTitle className="text-lg flex items-center gap-2">
             <Ticket className="h-5 w-5" />
-            Open Tickets
+            Zendesk Tickets
           </CardTitle>
-          <CardDescription>Click on any ticket to view it in Zendesk</CardDescription>
+          <CardDescription>Click on any ticket to open it in Zendesk and respond to customers</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading tickets...</p>
+                <p className="text-muted-foreground">Loading tickets from Zendesk...</p>
               </div>
             </div>
           ) : error ? (
@@ -122,7 +121,7 @@ export default function SupportView() {
                   <Ticket className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <p className="text-muted-foreground text-lg font-medium mb-2">No Open Tickets</p>
-                <p className="text-sm text-muted-foreground">All tickets have been resolved</p>
+                <p className="text-sm text-muted-foreground">All Zendesk tickets have been resolved</p>
               </div>
             </div>
           ) : (

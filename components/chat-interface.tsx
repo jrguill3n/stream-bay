@@ -47,49 +47,38 @@ export function ChatInterface({
 
     async function initChat() {
       try {
-        console.log("[v0] Initializing chat for user:", userId)
-
         const tokenResponse = await fetch("/api/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId, name: userName }),
         })
 
-        console.log("[v0] Token response status:", tokenResponse.status)
-
         if (!tokenResponse.ok) {
           const errorData = await tokenResponse.json().catch(() => ({ error: "Unknown error" }))
-          console.error("[v0] Token request failed:", errorData)
           throw new Error(errorData.error || "Failed to get token")
         }
 
         const { token, apiKey } = await tokenResponse.json()
-        console.log("[v0] Got token and API key:", { hasToken: !!token, hasApiKey: !!apiKey, apiKey })
 
         if (!token || !apiKey) {
           throw new Error("Token or API key missing from response")
         }
 
-        console.log("[v0] Creating new Stream client instance with API key:", apiKey)
         chatClient = new StreamChat(apiKey)
 
-        console.log("[v0] Connecting user to Stream...")
         await chatClient.connectUser({ id: userId, name: userName }, token)
-        console.log("[v0] Connected user to Stream")
 
         if (!mounted) {
           await chatClient.disconnectUser()
           return
         }
 
-        // Get or create channel
         activeChannel = chatClient.channel(channelType, channelId, {
           name: title,
           members: [userId],
         })
 
         await activeChannel.watch()
-        console.log("[v0] Watching channel:", channelId)
 
         if (!mounted) {
           return
@@ -98,13 +87,10 @@ export function ChatInterface({
         setClient(chatClient)
         setChannel(activeChannel)
 
-        // Get initial messages
         const state = activeChannel.state
         setMessages(state.messages || [])
 
-        // Listen for new messages
         activeChannel.on("message.new", (event) => {
-          console.log("[v0] New message received:", event.message)
           if (mounted && event.message) {
             setMessages((prev) => [...prev, event.message!])
           }
@@ -112,7 +98,7 @@ export function ChatInterface({
 
         setIsLoading(false)
       } catch (err) {
-        console.error("[v0] Error initializing chat:", err)
+        console.error("Error initializing chat:", err)
         if (mounted) {
           const errorMessage = err instanceof Error ? err.message : "Failed to initialize chat"
           setError(
@@ -128,8 +114,7 @@ export function ChatInterface({
     return () => {
       mounted = false
       if (chatClient) {
-        console.log("[v0] Disconnecting user...")
-        chatClient.disconnectUser().catch((err) => console.error("[v0] Error disconnecting:", err))
+        chatClient.disconnectUser().catch((err) => console.error("Error disconnecting:", err))
       }
     }
   }, [userId, userName, channelId, channelType, title])
@@ -144,13 +129,12 @@ export function ChatInterface({
     if (!channel || !newMessage.trim()) return
 
     try {
-      console.log("[v0] Sending message:", newMessage)
       await channel.sendMessage({
         text: newMessage,
       })
       setNewMessage("")
     } catch (err) {
-      console.error("[v0] Error sending message:", err)
+      console.error("Error sending message:", err)
       setError("Failed to send message")
     }
   }

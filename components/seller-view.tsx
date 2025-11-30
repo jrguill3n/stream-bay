@@ -15,7 +15,6 @@ export default function SellerView() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* </CHANGE> */}
       <Card className="mb-6 shadow-md">
         <CardHeader className="border-b bg-accent/50">
           <div className="flex items-center gap-3">
