@@ -121,7 +121,13 @@ export function ChatInterface({
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      const scrollContainer = scrollRef.current
+      const lastMessage = scrollContainer.querySelector('div[class*="space-y-4"] > div:last-child')
+      if (lastMessage) {
+        lastMessage.scrollIntoView({ behavior: "smooth", block: "end" })
+      } else {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
+      }
     }
   }, [messages])
 
