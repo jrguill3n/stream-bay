@@ -44,7 +44,7 @@ export default function Home() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="hover:shadow-lg transition-shadow border-2">
+              <Card className="hover:shadow-lg transition-shadow border-2 flex flex-col h-full">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <ShoppingBag className="h-8 w-8 text-primary" />
@@ -54,14 +54,14 @@ export default function Home() {
                     Browse listings and chat with sellers. Escalate issues to support when needed.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="mt-auto">
                   <Button className="w-full" size="lg" onClick={() => setSelectedRole("buyer")}>
                     Continue as Buyer
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow border-2">
+              <Card className="hover:shadow-lg transition-shadow border-2 flex flex-col h-full">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Store className="h-8 w-8 text-primary" />
@@ -69,14 +69,14 @@ export default function Home() {
                   <CardTitle className="text-xl">Seller</CardTitle>
                   <CardDescription>Manage your listings and respond to buyer inquiries in real-time.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="mt-auto">
                   <Button className="w-full" size="lg" onClick={() => setSelectedRole("seller")}>
                     Continue as Seller
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow border-2">
+              <Card className="hover:shadow-lg transition-shadow border-2 flex flex-col h-full">
                 <CardHeader className="text-center pb-4">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Headphones className="h-8 w-8 text-primary" />
@@ -87,7 +87,7 @@ export default function Home() {
                     Escalated conversations are managed via Zendesk
                   </p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="mt-auto">
                   <Button className="w-full" size="lg" onClick={() => setSelectedRole("support")}>
                     Continue as Support
                   </Button>
@@ -102,27 +102,30 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Powered by Stream Chat SDK for instant communication between all parties.
+                    Instant buyer-seller communication powered by Stream Chat SDK with typing indicators and message
+                    history.
                   </p>
                 </CardContent>
               </Card>
               <Card className="border">
                 <CardHeader>
-                  <CardTitle className="text-base">Smart Escalation</CardTitle>
+                  <CardTitle className="text-base">Zendesk Integration</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Buyers can seamlessly escalate conversations to support agents when needed.
+                    Seamless escalation to Zendesk support tickets with in-app chat interface and automatic ticket
+                    management.
                   </p>
                 </CardContent>
               </Card>
               <Card className="border">
                 <CardHeader>
-                  <CardTitle className="text-base">Secure & Scalable</CardTitle>
+                  <CardTitle className="text-base">Full-stack Architecture</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Built with Next.js and enterprise-grade chat infrastructure.
+                    Built with Next.js 16, TypeScript, Stream API, and Zendesk REST API with enterprise-grade
+                    scalability.
                   </p>
                 </CardContent>
               </Card>
