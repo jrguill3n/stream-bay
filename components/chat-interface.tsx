@@ -19,6 +19,7 @@ interface ChatInterfaceProps {
   title: string
   onEscalate?: () => void
   showEscalateButton?: boolean
+  escalateButtonText?: string
 }
 
 export function ChatInterface({
@@ -29,6 +30,7 @@ export function ChatInterface({
   title,
   onEscalate,
   showEscalateButton = false,
+  escalateButtonText = "Need Help?",
 }: ChatInterfaceProps) {
   const [client, setClient] = useState<StreamChat | null>(null)
   const [channel, setChannel] = useState<StreamChannel | null>(null)
@@ -188,7 +190,7 @@ export function ChatInterface({
         {showEscalateButton && onEscalate && (
           <Button variant="outline" size="sm" onClick={onEscalate}>
             <AlertCircle className="w-4 h-4 mr-2" />
-            Need Help?
+            {escalateButtonText}
           </Button>
         )}
       </CardHeader>

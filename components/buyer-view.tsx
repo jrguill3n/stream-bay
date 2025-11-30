@@ -25,6 +25,8 @@ const SELLER_ID = "seller_1"
 export default function BuyerView() {
   const [channelId, setChannelId] = useState<string | null>(null)
   const [isEscalated, setIsEscalated] = useState(false)
+  const [zendeskTicketId, setZendeskTicketId] = useState<string | null>(null)
+  const [zendeskTicketUrl, setZendeskTicketUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
@@ -104,8 +106,19 @@ export default function BuyerView() {
     if (!channelId) return
 
     try {
-      console.log("[v0] Escalating from channel:", channelId)
       setIsLoading(true)
+
+      if (zendeskTicketId && zendeskTicketUrl) {
+        console.log("[v0] Opening existing Zendesk ticket:", zendeskTicketId)
+        window.open(zendeskTicketUrl, "_blank")
+        toast({
+          title: "Ticket opened",
+          description: `Opening existing ticket #${zendeskTicketId} in Zendesk`,
+        })
+        return
+      }
+
+      console.log("[v0] Escalating from channel:", channelId)
 
       const response = await fetch("/api/channels/escalate", {
         method: "POST",
@@ -116,11 +129,8 @@ export default function BuyerView() {
         }),
       })
 
-      console.log("[v0] Escalate response status:", response.status)
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-        console.error("[v0] Escalate failed:", errorData)
         throw new Error(errorData.error || "Failed to escalate")
       }
 
@@ -129,50 +139,46 @@ export default function BuyerView() {
       setChannelId(supportChannelId)
       setIsEscalated(true)
 
-      console.log("[v0] Attempting to create Zendesk ticket...")
-      alert("Escalation successful! Now creating Zendesk ticket...")
+      console.log("[v0] Creating Zendesk ticket...")
+      const zendeskResponse = await fetch("/api/zendesk-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channelId: supportChannelId,
+          customerId: BUYER_ID,
+          listingId: LISTING.id,
+        }),
+      })
 
-      try {
-        const zendeskResponse = await fetch("/api/zendesk-ticket", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            channelId: supportChannelId,
-            customerId: BUYER_ID,
-            listingId: LISTING.id,
-          }),
+      const zendeskData = await zendeskResponse.json()
+
+      if (zendeskResponse.ok) {
+        const { ticketId, ticketUrl } = zendeskData
+        console.log("[v0] Zendesk ticket created:", ticketId)
+
+        setZendeskTicketId(ticketId)
+        setZendeskTicketUrl(ticketUrl)
+
+        toast({
+          title: "Support ticket created",
+          description: `Ticket #${ticketId} created. Click "Need Help?" again to open it.`,
         })
-
-        console.log("[v0] Zendesk API response status:", zendeskResponse.status)
-        const zendeskData = await zendeskResponse.json()
-        console.log("[v0] Zendesk API response data:", zendeskData)
-
-        if (zendeskResponse.ok) {
-          const { ticketId, ticketUrl } = zendeskData
-          console.log("[v0] Zendesk ticket created:", ticketId, ticketUrl)
-
-          alert(`✅ Zendesk Ticket Created!\nTicket #${ticketId}\n${ticketUrl}`)
-
-          toast({
-            title: "Support ticket created",
-            description: `A support ticket has been created. Ticket #${ticketId}`,
-          })
-        } else {
-          console.error("[v0] Failed to create Zendesk ticket:", zendeskData)
-          alert(
-            `❌ Failed to create Zendesk ticket:\n${zendeskData.error || "Unknown error"}\n\nCheck console for details.`,
-          )
-        }
-      } catch (zendeskError) {
-        console.error("[v0] Zendesk ticket creation error:", zendeskError)
-        alert(
-          `❌ Zendesk API Error:\n${zendeskError instanceof Error ? zendeskError.message : "Unknown error"}\n\nCheck console for details.`,
-        )
+      } else {
+        console.error("[v0] Failed to create Zendesk ticket:", zendeskData)
+        toast({
+          title: "Escalation successful",
+          description: "Support channel created, but Zendesk ticket creation failed.",
+          variant: "destructive",
+        })
       }
     } catch (err) {
       console.error("[v0] Failed to escalate:", err)
       setError("Failed to escalate to support. Please try again.")
-      alert(`❌ Escalation failed:\n${err instanceof Error ? err.message : "Unknown error"}`)
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to escalate",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -243,7 +249,8 @@ export default function BuyerView() {
               channelId={channelId}
               title={isEscalated ? "Support Chat" : "Chat with Seller"}
               onEscalate={handleEscalate}
-              showEscalateButton={!isEscalated}
+              showEscalateButton={!isEscalated || !!zendeskTicketId}
+              escalateButtonText={zendeskTicketId ? "Open Zendesk Ticket" : "Need Help?"}
             />
           ) : (
             <Card className="h-full flex items-center justify-center shadow-md border">
