@@ -7,6 +7,7 @@ import { ChatInterface } from "@/components/chat-interface"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useZendesk } from "@/hooks/use-zendesk"
 
 const LISTING = {
   id: "1234",
@@ -27,8 +28,8 @@ export default function BuyerView() {
   const [isEscalated, setIsEscalated] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [zendeskTicketId, setZendeskTicketId] = useState<string | null>(null)
   const { toast } = useToast()
+  const { isReady: isZendeskReady, openZendesk } = useZendesk()
 
   useEffect(() => {
     let mounted = true
@@ -103,39 +104,28 @@ export default function BuyerView() {
 
   const handleEscalate = async () => {
     try {
-      console.log("[v0] Starting Zendesk escalation")
+      console.log("[v0] Escalating to Zendesk support")
 
-      const response = await fetch("/api/zendesk-escalate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingId: LISTING.id,
-          buyerId: BUYER_ID,
-          sellerId: SELLER_ID,
-        }),
-      })
+      if (isZendeskReady) {
+        openZendesk()
+        setIsEscalated(true)
 
-      if (!response.ok) {
-        throw new Error("Failed to escalate to Zendesk")
+        toast({
+          title: "Connected to Support",
+          description: "Chat with our support team in the messenger",
+        })
+      } else {
+        toast({
+          title: "Support Loading",
+          description: "Please wait a moment and try again",
+          variant: "destructive",
+        })
       }
-
-      const data = await response.json()
-      console.log("[v0] Zendesk escalation response:", data)
-
-      setZendeskTicketId(data.ticketId)
-      setIsEscalated(true)
-
-      toast({
-        title: data.isNew ? "Support Ticket Created" : "Opening Existing Ticket",
-        description: `Ticket #${data.ticketId} - ${data.message}`,
-      })
-
-      window.open(data.ticketUrl, "_blank", "width=1200,height=800")
     } catch (error) {
-      console.error("[v0] Error escalating to Zendesk:", error)
+      console.error("[v0] Error opening Zendesk:", error)
       toast({
-        title: "Escalation Failed",
-        description: "Could not create support ticket. Please try again.",
+        title: "Could not open support chat",
+        description: "Please try again",
         variant: "destructive",
       })
     }
@@ -201,15 +191,17 @@ export default function BuyerView() {
         <div className="flex-1 min-h-[600px]">
           {channelId ? (
             <div className="space-y-3">
-              {isEscalated && zendeskTicketId && (
+              {isEscalated && (
                 <Card className="border-primary bg-primary/5">
                   <CardContent className="py-3 px-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-primary">Now chatting with Support via Zendesk</p>
-                        <p className="text-sm text-muted-foreground">Ticket #{zendeskTicketId}</p>
+                        <p className="text-sm text-muted-foreground">Check the messenger widget for responses</p>
                       </div>
-                      <Badge variant="secondary">Support Active</Badge>
+                      <Button size="sm" onClick={openZendesk} variant="outline">
+                        Open Support Chat
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
