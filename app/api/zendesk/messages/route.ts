@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
           comment: {
             body: message,
             public: true,
+            author_id: customerId,
           },
         },
       }),
@@ -103,7 +104,10 @@ export async function POST(req: NextRequest) {
     const data = await response.json()
     console.log("[v0] Message sent successfully:", data)
 
-    return NextResponse.json({ success: true })
+    const audit = data.audit
+    const commentId = audit?.events?.find((e: any) => e.type === "Comment")?.id
+
+    return NextResponse.json({ success: true, commentId })
   } catch (error) {
     console.error("[v0] Failed to send message to Zendesk:", error)
     return NextResponse.json({ error: "Failed to send message" }, { status: 500 })

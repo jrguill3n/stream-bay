@@ -29,6 +29,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
   const [initialLoad, setInitialLoad] = useState(true)
   const [requesterId, setRequesterId] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [customerMessageIds, setCustomerMessageIds] = useState<Set<number>>(new Set())
 
   const fetchMessages = async () => {
     try {
@@ -47,6 +48,12 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
 
   useEffect(() => {
     fetchMessages()
+
+    const interval = setInterval(() => {
+      fetchMessages()
+    }, 10000) // Poll every 10 seconds for new messages
+
+    return () => clearInterval(interval)
   }, [ticketId])
 
   useEffect(() => {
@@ -74,6 +81,11 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || "Failed to send message")
+      }
+
+      const result = await response.json()
+      if (result.commentId) {
+        setCustomerMessageIds((prev) => new Set([...prev, result.commentId]))
       }
 
       setNewMessage("")
@@ -113,7 +125,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => {
-            const isCustomer = message.author_id === requesterId
+            const isCustomer = customerMessageIds.has(message.id) || message.author_id === requesterId
             return (
               <div key={message.id} className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}>
                 <div
