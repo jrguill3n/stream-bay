@@ -51,7 +51,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
 
     const interval = setInterval(() => {
       fetchMessages()
-    }, 10000) // Poll every 10 seconds for new messages
+    }, 10000)
 
     return () => clearInterval(interval)
   }, [ticketId])
@@ -115,30 +115,16 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
 
   return (
     <div className="flex flex-col h-[600px] bg-background border rounded-lg overflow-hidden">
-      {/* Header */}
       <div className="px-4 py-3 border-b bg-primary/5 shrink-0">
         <h3 className="font-semibold text-primary">Support Chat (Zendesk Ticket #{ticketId})</h3>
         <p className="text-xs text-muted-foreground">Connected to support team</p>
       </div>
 
-      {/* Messages */}
       <ScrollArea className="flex-1 p-4 overflow-auto">
         <div className="space-y-4">
           {messages.map((message) => {
             const hasCustomerPrefix = message.body.startsWith(`[${customerName}]:`)
-            const isCustomer =
-              hasCustomerPrefix || customerMessageIds.has(message.id) || message.author_id === requesterId
-
-            console.log("[v0] Message classification:", {
-              id: message.id,
-              body: message.body.substring(0, 50),
-              author_id: message.author_id,
-              requesterId,
-              hasCustomerPrefix,
-              inMessageIds: customerMessageIds.has(message.id),
-              authorMatches: message.author_id === requesterId,
-              isCustomer,
-            })
+            const isCustomer = hasCustomerPrefix || customerMessageIds.has(message.id)
 
             const displayBody = hasCustomerPrefix ? message.body.replace(`[${customerName}]: `, "") : message.body
 
@@ -160,7 +146,6 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
         </div>
       </ScrollArea>
 
-      {/* Input */}
       <div className="p-4 border-t bg-background shrink-0">
         <div className="flex gap-2">
           <Input
