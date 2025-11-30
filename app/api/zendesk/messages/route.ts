@@ -17,10 +17,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Fetch ticket comments from Zendesk
     const url = `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets/${ticketId}/comments.json`
+    const ticketUrl = `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets/${ticketId}.json`
     const authHeader = `Basic ${Buffer.from(`${ZENDESK_EMAIL}/token:${ZENDESK_API_TOKEN}`).toString("base64")}`
 
+    // Fetch ticket to get requester ID
+    const ticketResponse = await fetch(ticketUrl, {
+      headers: {
+        Authorization: authHeader,
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!ticketResponse.ok) {
+      throw new Error(`Zendesk API error: ${ticketResponse.status}`)
+    }
+
+    const ticketData = await ticketResponse.json()
+    const requesterId = ticketData.ticket.requester_id
+
+    // Fetch comments
     const response = await fetch(url, {
       headers: {
         Authorization: authHeader,
@@ -33,7 +49,8 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json()
-    return NextResponse.json({ comments: data.comments })
+
+    return NextResponse.json({ comments: data.comments, requesterId })
   } catch (error) {
     console.error("[v0] Failed to fetch Zendesk messages:", error)
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 })

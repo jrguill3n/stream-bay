@@ -27,6 +27,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
   const [newMessage, setNewMessage] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
+  const [requesterId, setRequesterId] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const fetchMessages = async () => {
@@ -36,6 +37,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
 
       const data = await response.json()
       setMessages(data.comments || [])
+      setRequesterId(data.requesterId)
       setInitialLoad(false)
     } catch (error) {
       console.error("[v0] Failed to fetch Zendesk messages:", error)
@@ -111,7 +113,7 @@ export function ZendeskChatInterface({ ticketId, customerId, customerName }: Zen
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => {
-            const isCustomer = message.body.includes(customerName) || message.public
+            const isCustomer = message.author_id === requesterId
             return (
               <div key={message.id} className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}>
                 <div
