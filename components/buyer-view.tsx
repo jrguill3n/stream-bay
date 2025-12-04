@@ -73,7 +73,11 @@ export default function BuyerView() {
   }, [])
 
   const handleEscalate = async () => {
+    console.log("[v0] BuyerView handleEscalate called")
+    console.log("[v0] Channel ID:", `marketplace-${LISTING.id}-${BUYER_ID}`)
+
     try {
+      console.log("[v0] Sending escalation request...")
       const response = await fetch("/api/zendesk/escalate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,12 +88,16 @@ export default function BuyerView() {
         }),
       })
 
+      console.log("[v0] Escalation response status:", response.status)
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        console.error("[v0] Escalation API error:", errorData)
         throw new Error(errorData.error || "Failed to escalate")
       }
 
       const { ticketId } = await response.json()
+      console.log("[v0] Escalation successful, ticket ID:", ticketId)
 
       toast({
         title: "Escalated to Support",
@@ -98,7 +106,7 @@ export default function BuyerView() {
 
       // Don't manually switch state - let Stream SDK pick up the channel update
     } catch (err) {
-      console.error("Error escalating:", err)
+      console.error("[v0] Error escalating:", err)
       toast({
         title: "Escalation Failed",
         description: err instanceof Error ? err.message : "Failed to escalate to support. Please try again.",

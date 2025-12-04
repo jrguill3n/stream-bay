@@ -106,10 +106,15 @@ export function StreamChatWrapper({
   }, [userId, userName, listingId, buyerId, sellerId])
 
   const handleEscalate = async () => {
+    console.log("[v0] StreamChatWrapper handleEscalate called")
     if (onEscalate) {
+      console.log("[v0] Calling parent onEscalate")
       await onEscalate()
+      console.log("[v0] Parent onEscalate completed")
       // Stream SDK will automatically pick up the channel.updated event
       // and re-render into SupportChat when ticketId is set
+    } else {
+      console.log("[v0] No onEscalate prop provided to StreamChatWrapper")
     }
   }
 

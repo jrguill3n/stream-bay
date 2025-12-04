@@ -72,13 +72,19 @@ export function BuyerSellerChat({ channel, userId, onEscalate }: BuyerSellerChat
   }
 
   const handleEscalateClick = async () => {
-    if (!onEscalate) return
+    console.log("[v0] Need Help button clicked")
+    if (!onEscalate) {
+      console.log("[v0] No onEscalate handler provided")
+      return
+    }
 
+    console.log("[v0] Starting escalation...")
     setIsEscalating(true)
     try {
       await onEscalate()
+      console.log("[v0] Escalation completed successfully")
     } catch (err) {
-      console.error("Escalation failed:", err)
+      console.error("[v0] Escalation failed:", err)
     } finally {
       setIsEscalating(false)
     }
