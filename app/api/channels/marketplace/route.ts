@@ -6,19 +6,21 @@ import { StreamChat } from "stream-chat"
  *
  * Creates or retrieves a marketplace channel for a specific listing.
  * Channel members are the buyer and seller.
- * Channel ID follows pattern: listing-{listingId}-{buyerId}-{sellerId}
+ * Channel ID follows pattern: marketplace-{listingId}-{buyerId}
+ *
+ * Custom fields stored in channel data:
+ * - listingId: The product listing ID
+ * - buyerId: The buyer's user ID
+ * - sellerId: The seller's user ID
+ * - ticketId: Zendesk ticket ID (null until escalated)
  *
  * Input: { listingId: string, buyerId: string, sellerId: string }
- * Output: { channelId: string }
+ * Output: { channelId: string, channelData: object }
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log("[v0] Marketplace channel API called")
-
     const body = await request.json()
     const { listingId, buyerId, sellerId } = body
-
-    console.log("[v0] Request body:", { listingId, buyerId, sellerId })
 
     if (!listingId || !buyerId || !sellerId) {
       return NextResponse.json({ error: "listingId, buyerId, and sellerId are required" }, { status: 400 })
@@ -27,47 +29,43 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.STREAM_API_KEY
     const apiSecret = process.env.STREAM_API_SECRET
 
-    console.log("[v0] API Key exists:", !!apiKey)
-    console.log("[v0] API Secret exists:", !!apiSecret)
-
     if (!apiKey || !apiSecret) {
       return NextResponse.json({ error: "Stream Chat credentials not configured" }, { status: 500 })
     }
 
-    const serverClient = new StreamChat(apiKey, apiSecret)
+    const serverClient = StreamChat.getInstance(apiKey, apiSecret)
 
-    console.log("[v0] Server client created")
+    // Ensure users exist in Stream
+    await serverClient.upsertUsers([
+      { id: buyerId, name: `Buyer ${buyerId}`, role: "user" },
+      { id: sellerId, name: `Seller ${sellerId}`, role: "user" },
+    ])
 
-    try {
-      await serverClient.upsertUsers([
-        { id: buyerId, name: `Buyer ${buyerId}`, role: "user" },
-        { id: sellerId, name: `Seller ${sellerId}`, role: "user" },
-      ])
-      console.log("[v0] Users upserted successfully")
-    } catch (userError) {
-      console.error("[v0] Error upserting users:", userError)
-      throw userError
+    const channelId = `marketplace-${listingId}-${buyerId}`
+
+    const channelData = {
+      name: `Listing #${listingId}`,
+      listingId,
+      buyerId,
+      sellerId,
+      ticketId: null,
+      created_by_id: buyerId,
     }
 
-    const channelId = `listing-${listingId}-${buyerId}-${sellerId}`
+    const channel = serverClient.channel("messaging", channelId, channelData)
 
-    console.log("[v0] Creating channel:", channelId)
-
-    const channel = serverClient.channel("messaging", channelId, {
-      name: `Listing #${listingId}`,
-      members: [buyerId, sellerId],
-      created_by_id: buyerId,
-    })
-
+    // This will create the channel if it doesn't exist, or fetch it if it does
     await channel.create()
 
-    console.log("[v0] Channel created successfully:", channelId)
+    // Add members if not already added (idempotent)
+    await channel.addMembers([buyerId, sellerId])
 
     return NextResponse.json({
       channelId,
+      channelData: channel.data,
     })
   } catch (error) {
-    console.error("[v0] Marketplace Channel API Error:", error)
+    console.error("Marketplace Channel API Error:", error)
     return NextResponse.json(
       {
         error: "Failed to create marketplace channel",

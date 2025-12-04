@@ -1,16 +1,56 @@
 # StreamBay - Marketplace Chat Demo
 
-A full-stack Next.js application showcasing **Stream Chat SDK** integration in a marketplace scenario with **Zendesk support escalation**. This demo highlights real-time messaging between buyers and sellers with intelligent support ticket management.
+A full-stack Next.js application showcasing **Stream Chat SDK** integration in a marketplace scenario with **Zendesk support escalation**. This demo highlights real-time messaging between buyers and sellers with intelligent support ticket management using a unified Stream channel for both customer-seller and customer-support conversations.
 
 ## Features
 
-- **Buyer Experience**: Browse listings and chat with sellers in real-time using Stream Chat, with seamless escalation to Zendesk support
-- **Seller Experience**: Respond to buyer inquiries instantly through Stream Chat SDK
-- **Support Escalation**: Buyers can escalate conversations to Zendesk, creating support tickets with full context from the Stream Chat history
-- **In-App Support Chat**: Continue support conversations within the app using Zendesk's ticketing system without leaving the interface
+- **Unified Stream Chat Experience**: All conversations (buyer-seller and buyer-support) happen in a single Stream Chat channel with conditional UI rendering
+- **Buyer Experience**: Browse listings, chat with sellers in real-time, and seamlessly escalate to support without leaving the conversation
+- **Seller Experience**: Respond to buyer inquiries instantly through Stream Chat SDK with real-time updates
+- **Intelligent Support Escalation**: When buyers click "Need Help?", a Zendesk ticket is automatically created with full Stream Chat history
+- **Webhook-Driven Support Messages**: Support agent replies from Zendesk are automatically posted back into the Stream channel via webhooks
 - **Support Agent Dashboard**: View and manage all Zendesk tickets from escalated conversations with direct access to ticket details
-- **Real-time Messaging**: Powered by Stream Chat with typing indicators, read receipts, and message history
+- **Real-time Messaging**: Powered by Stream Chat with typing indicators, read receipts, message history, and custom data storage
 - **Role-based Views**: Switch between Buyer, Seller, and Support Agent perspectives to experience the full workflow
+
+## Support Escalation Flow
+
+1. **Buyer initiates escalation**: Clicks "Need Help?" button in the Stream Chat interface during a conversation with a seller
+2. **Ticket creation with context**: System creates a Zendesk ticket containing the full Stream Chat conversation history, tagged with `listingId`, `buyerId`, and `sellerId` for tracking
+3. **Channel metadata update**: The Zendesk `ticketId` is stored as custom data on the Stream channel using `channel.updatePartial()`
+4. **UI switches automatically**: Stream SDK detects the channel update event and switches from buyer-seller UI to support UI mode with orange-highlighted support messages
+5. **Support agent responds**: Agent replies in Zendesk, triggering a webhook to `/api/zendesk/webhook` which posts the comment as a Stream message from the support user
+6. **Real-time delivery**: The support message appears instantly in the buyer's Stream Chat interface without polling or page refresh
+
+## Technical Architecture
+
+### Stream Chat Role
+
+Stream Chat serves as the **single source of truth** for all conversation data:
+
+- **Channel Management**: Creates deterministic channels with ID pattern `marketplace-{listingId}-{buyerId}` containing custom data (`listingId`, `buyerId`, `sellerId`, `ticketId`)
+- **Message Delivery**: Handles real-time message transport for buyer-seller conversations and support messages from Zendesk webhooks
+- **State Synchronization**: Uses channel update events to trigger UI transitions when escalation occurs
+- **Message History**: Provides full conversation context for Zendesk ticket creation and user reference
+
+### Zendesk Role
+
+Zendesk serves as the **agent workflow and ticketing system**:
+
+- **Ticket Management**: Creates and tracks support tickets with conversation context from Stream Chat
+- **Agent Interface**: Provides familiar support tools for agents to respond to escalated conversations
+- **Webhook Notifications**: Sends HTTP POST requests to `/api/zendesk/webhook` when agents add public comments
+- **Search and Organization**: Uses tags to link tickets to marketplace context (listing, buyer, seller)
+
+### Next.js API Routes
+
+Next.js API routes act as the **integration layer** between Stream and Zendesk:
+
+- **Token Generation** (`/api/token`): Creates Stream Chat authentication tokens for users
+- **Channel Creation** (`/api/channels/marketplace`): Initializes Stream channels with custom marketplace metadata
+- **Escalation Handler** (`/api/zendesk/escalate`): Fetches Stream chat history, creates Zendesk ticket, updates Stream channel with `ticketId`, optionally adds support agent to channel
+- **Webhook Receiver** (`/api/zendesk/webhook`): Validates webhook secret, queries Stream channels by `ticketId`, posts support agent messages back into Stream channel
+- **Ticket Listing** (`/api/zendesk/tickets`): Fetches open tickets for support agent dashboard
 
 ## Architecture
 
@@ -25,79 +65,44 @@ A full-stack Next.js application showcasing **Stream Chat SDK** integration in a
   
 - **POST /api/channels/marketplace**: Creates marketplace channels between buyers and sellers
   - Input: `{ listingId, buyerId, sellerId }`
-  - Output: `{ channelId }`
-  - Channel ID pattern: `listing-{listingId}-{buyerId}-{sellerId}`
+  - Output: `{ channelId, channelData }`
+  - Channel ID pattern: `marketplace-{listingId}-{buyerId}`
+  - Custom data: `listingId`, `buyerId`, `sellerId`, `ticketId` (initially null)
   - Automatically adds both buyer and seller as channel members
 
 #### Zendesk Integration APIs
 
-- **GET /api/zendesk/messages**: Fetches comments from a Zendesk ticket
-  - Query: `?ticketId=X`
-  - Returns ticket comments with author information and timestamps
-  - Used to display support conversations in-app
+- **POST /api/zendesk/escalate**: Creates Zendesk ticket and updates Stream channel
+  - Input: `{ channelId }`
+  - Fetches last 50 messages from Stream channel
+  - Searches for existing tickets using tags to avoid duplicates
+  - Creates Zendesk ticket with formatted chat transcript
+  - Updates Stream channel with `ticketId` using `channel.updatePartial()`
+  - Optionally adds support agent to Stream channel if `SUPPORT_AGENT_ID` is set
+  - Returns `{ ticketId, ticketUrl, escalated: true }`
 
-- **POST /api/zendesk/messages**: Adds customer message to Zendesk ticket
-  - Input: `{ ticketId, message, customerName }`
-  - Creates ticket comment prefixed with customer name for agent context
-  - Returns new comment ID for tracking
+- **POST /api/zendesk/webhook**: Receives Zendesk comment webhooks
+  - Input: `{ ticket_id, comment_body, author_name }`
+  - Validates `x-zendesk-webhook-secret` header for security
+  - Queries Stream channels where `ticketId` matches incoming ticket
+  - Posts support agent message to Stream channel as `user_id: "support"`
+  - Always returns 200 OK to acknowledge receipt to Zendesk
 
 - **GET /api/zendesk/tickets**: Lists open Zendesk support tickets
   - Returns all tickets with status "new", "open", or "pending"
   - Includes subject, priority, creation date, and ticket metadata
   - Used by support agent dashboard
 
-### Support Escalation Flow
-
-1. **Buyer initiates escalation**: Click "Need Help?" in the Stream Chat interface
-2. **Ticket creation**: System creates Zendesk ticket with:
-   - Subject: Customer escalation request
-   - Description: Full Stream Chat conversation history
-   - Tags: listing ID, buyer ID, seller ID for tracking
-3. **In-app chat**: Buyer sees custom chat interface connected to Zendesk ticket
-4. **Support response**: Agent responds in Zendesk, messages appear in buyer's interface
-5. **Return to seller**: Buyer can close support chat and return to seller conversation
-
 ### Frontend Components
 
 - **app/page.tsx**: Main entry point with role selection and feature showcase
-- **components/buyer-view.tsx**: Buyer interface with listing browsing, Stream Chat, and Zendesk escalation
+- **components/buyer-view.tsx**: Buyer interface wrapper that manages Stream Chat client and channel loading
+- **components/stream-chat-wrapper.tsx**: Loads Stream channel, watches for `ticketId` changes, conditionally renders buyer-seller or support UI
+- **components/buyer-seller-chat.tsx**: Stream Chat UI for buyer-seller conversations with "Need Help?" escalation button
+- **components/support-chat.tsx**: Stream Chat UI for support mode with orange-highlighted support agent messages
 - **components/seller-view.tsx**: Seller interface for managing inquiries via Stream Chat
 - **components/support-view.tsx**: Support agent dashboard displaying Zendesk tickets with status and priority
-- **components/chat-interface.tsx**: Reusable Stream Chat component with custom UI and escalation button
-- **components/zendesk-chat-interface.tsx**: In-app Zendesk ticket chat interface with message polling and send functionality
 - **components/ui/**: shadcn/ui components for modern, accessible design
-
-### Tech Stack
-
-- **Next.js 16** (App Router) - Modern React framework with server components and API routes
-- **TypeScript** - Type-safe development throughout the stack
-- **Stream Chat SDK** (stream-chat) - Enterprise-grade real-time messaging with React components
-- **Zendesk API** - Customer support ticket management and comment threading
-- **Tailwind CSS v4** - Utility-first styling with custom design tokens
-- **shadcn/ui** - Beautiful, accessible component library built on Radix UI
-
-## Stream Chat Integration Highlights
-
-This demo showcases production-ready Stream Chat SDK integration:
-
-1. **Token Generation**: Secure server-side token creation for user authentication with Stream
-2. **Channel Management**: Dynamic channel creation with custom metadata for marketplace context
-3. **Real-time Updates**: Instant message delivery with typing indicators, online presence, and read receipts
-4. **Message History**: Full conversation persistence and retrieval for context preservation
-5. **Seamless Escalation**: Stream Chat conversations can be escalated to Zendesk with full chat history included
-6. **Custom UI**: Tailored chat interface built on Stream's React SDK components
-7. **Scalable Architecture**: Ready for multi-user, multi-channel production scenarios
-
-## Zendesk Integration Highlights
-
-The Zendesk integration demonstrates enterprise support capabilities:
-
-1. **Automatic Ticket Creation**: Creates tickets from Stream Chat escalations with full conversation context
-2. **In-App Support Chat**: Custom interface for Zendesk ticket conversations without leaving the app
-3. **Real-time Polling**: Fetches new support messages automatically for seamless experience
-4. **Agent Dashboard**: Support agents view all open tickets with priority and status filtering
-5. **Bidirectional Communication**: Messages flow between customer app interface and Zendesk agent interface
-6. **Ticket Management**: Agents can review and respond to tickets in Zendesk's native interface
 
 ## Setup Instructions
 
@@ -115,6 +120,7 @@ The Zendesk integration demonstrates enterprise support capabilities:
      - `ZENDESK_SUBDOMAIN`: Your Zendesk subdomain (e.g., "yourcompany" from yourcompany.zendesk.com)
      - `ZENDESK_EMAIL`: Support agent email address
      - `ZENDESK_API_TOKEN`: Your Zendesk API token
+   - Set up a webhook in Zendesk to send notifications to `/api/zendesk/webhook` with the secret header `x-zendesk-webhook-secret`
 
 3. **Run the application**:
    \`\`\`bash
@@ -142,6 +148,7 @@ STREAM_API_SECRET=your_stream_api_secret
 ZENDESK_SUBDOMAIN=your_subdomain
 ZENDESK_EMAIL=agent@yourcompany.com
 ZENDESK_API_TOKEN=your_zendesk_token
+ZENDESK_WEBHOOK_SECRET=your_webhook_secret
 \`\`\`
 
 ## Learn More

@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChatInterface } from "@/components/chat-interface"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { ZendeskChatInterface } from "@/components/zendesk-chat-interface"
+import { StreamChatWrapper } from "@/components/stream-chat-wrapper"
 
 const LISTING = {
   id: "1234",
@@ -25,7 +24,6 @@ const SELLER_ID = "seller_1"
 
 export default function BuyerView() {
   const [channelId, setChannelId] = useState<string | null>(null)
-  const [isEscalated, setIsEscalated] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
@@ -74,48 +72,40 @@ export default function BuyerView() {
     }
   }, [])
 
-  const handleStartChat = async () => {
+  const handleEscalate = async () => {
     try {
-      setIsLoading(true)
-
-      const response = await fetch("/api/channels/marketplace", {
+      const response = await fetch("/api/zendesk/escalate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          channelId: `marketplace-${LISTING.id}-${BUYER_ID}`,
           listingId: LISTING.id,
           buyerId: BUYER_ID,
-          sellerId: SELLER_ID,
         }),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to create channel")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to escalate")
       }
 
-      const { channelId: newChannelId } = await response.json()
-      setChannelId(newChannelId)
+      const { ticketId } = await response.json()
+
+      toast({
+        title: "Escalated to Support",
+        description: `Support ticket #${ticketId} has been created. A support agent will assist you shortly.`,
+      })
+
+      // Don't manually switch state - let Stream SDK pick up the channel update
     } catch (err) {
-      console.error("Failed to start chat:", err)
-    } finally {
-      setIsLoading(false)
+      console.error("Error escalating:", err)
+      toast({
+        title: "Escalation Failed",
+        description: err instanceof Error ? err.message : "Failed to escalate to support. Please try again.",
+        variant: "destructive",
+      })
+      throw err // Re-throw to let the button handler know it failed
     }
-  }
-
-  const handleEscalate = async () => {
-    setIsEscalated(true)
-
-    toast({
-      title: "Connected to Support",
-      description: "Loading support chat...",
-    })
-  }
-
-  const handleBackToSeller = () => {
-    setIsEscalated(false)
-    toast({
-      title: "Returned to Seller Chat",
-      description: "You can now continue chatting with the seller",
-    })
   }
 
   if (error) {
@@ -161,7 +151,7 @@ export default function BuyerView() {
 
                 <div className="space-y-2 pt-2 border-t">
                   {!channelId && (
-                    <Button onClick={handleStartChat} disabled={isLoading} className="w-full">
+                    <Button onClick={handleEscalate} disabled={isLoading} className="w-full">
                       {isLoading ? "Connecting..." : "Contact Seller"}
                     </Button>
                   )}
@@ -176,48 +166,14 @@ export default function BuyerView() {
         </div>
 
         <div className="flex-1 min-h-[600px]">
-          {channelId ? (
-            <div className="space-y-3">
-              {isEscalated && (
-                <Card className="border-primary bg-primary/5">
-                  <CardContent className="py-3 px-4">
-                    <p className="font-semibold text-primary">Now chatting with Support via Zendesk</p>
-                    <p className="text-sm text-muted-foreground">Your messages are sent directly to our support team</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {isEscalated ? (
-                <ZendeskChatInterface
-                  ticketId="6"
-                  customerId={BUYER_ID}
-                  customerName="Buyer User"
-                  onBack={handleBackToSeller}
-                />
-              ) : (
-                <ChatInterface
-                  userId={BUYER_ID}
-                  userName="Buyer User"
-                  channelId={channelId}
-                  title="Chat with Seller"
-                  onEscalate={handleEscalate}
-                  showEscalateButton={true}
-                />
-              )}
-            </div>
-          ) : (
-            <Card className="h-full flex items-center justify-center shadow-md border">
-              <CardContent className="text-center">
-                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <ShoppingCart className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <p className="text-foreground text-lg font-semibold mb-2">
-                  {isLoading ? "Loading chat..." : "Have a question?"}
-                </p>
-                <p className="text-sm text-muted-foreground">Click "Contact Seller" to start a conversation</p>
-              </CardContent>
-            </Card>
-          )}
+          <StreamChatWrapper
+            userId={BUYER_ID}
+            userName="Buyer User"
+            listingId={LISTING.id}
+            buyerId={BUYER_ID}
+            sellerId={SELLER_ID}
+            onEscalate={handleEscalate}
+          />
         </div>
       </div>
     </div>
