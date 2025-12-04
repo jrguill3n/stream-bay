@@ -7,16 +7,17 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Headset } from "lucide-react"
+import { Send, Headset, MessageSquare } from "lucide-react"
 import { format } from "date-fns"
 
 interface SupportChatProps {
   channel: StreamChannel
   userId: string
   ticketId: string
+  onViewBuyerChat?: () => void
 }
 
-export function SupportChat({ channel, userId, ticketId }: SupportChatProps) {
+export function SupportChat({ channel, userId, ticketId, onViewBuyerChat }: SupportChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -80,6 +81,12 @@ export function SupportChat({ channel, userId, ticketId }: SupportChatProps) {
             <p className="text-xs text-muted-foreground mt-0.5">You're now chatting with our support team</p>
           </div>
         </div>
+        {onViewBuyerChat && (
+          <Button variant="outline" size="sm" onClick={onViewBuyerChat} className="gap-2 bg-transparent">
+            <MessageSquare className="w-4 h-4" />
+            View Seller Chat
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[500px] p-4" ref={scrollRef}>

@@ -27,6 +27,7 @@ export function StreamChatWrapper({
   const [client, setClient] = useState<StreamChat | null>(null)
   const [channel, setChannel] = useState<StreamChannel | null>(null)
   const [ticketId, setTicketId] = useState<string | null>(null)
+  const [showBuyerChat, setShowBuyerChat] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -133,9 +134,11 @@ export function StreamChatWrapper({
     )
   }
 
-  if (ticketId) {
-    return <SupportChat channel={channel} userId={userId} ticketId={ticketId} />
+  if (!ticketId || showBuyerChat) {
+    return <BuyerSellerChat channel={channel} userId={userId} onEscalate={handleEscalate} />
   }
 
-  return <BuyerSellerChat channel={channel} userId={userId} onEscalate={handleEscalate} />
+  return (
+    <SupportChat channel={channel} userId={userId} ticketId={ticketId} onViewBuyerChat={() => setShowBuyerChat(true)} />
+  )
 }
